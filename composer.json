@@ -1,5 +1,5 @@
 {
-    "name": "aspen-user-api",
+    "name": "helllomatt/aspen-user-api",
     "version": "0.1",
     "description": "API module for the ASPEN framework to manage users and authentication.",
     "keywords": ["api", "users", "management", "aspen", "auth", "oauth2"],

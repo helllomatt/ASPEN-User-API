@@ -12,6 +12,7 @@ namespace Users;
  * Template file found here: https://github.com/bshaffer/oauth2-server-php/blob/develop/src/OAuth2/Storage/Pdo.php
  */
 
+use ASPEN\Config;
 use Double\DB;
 use OAuth2\Storage\AuthorizationCodeInterface;
 use OAuth2\Storage\AccessTokenInterface;
@@ -331,7 +332,7 @@ class Pdo implements AuthorizationCodeInterface, AccessTokenInterface,
     // just here so we don't get fined.
     public function getJti($client_id, $subject, $audience, $expiration, $jti) { return false; }
     public function setJti($client_id, $subject, $audience, $expiration, $jti) { return false; }
-    public function getPublicKey($client_id = null) { return false; }
-    public function getPrivateKey($client_id = null) { return false; }
-    public function getEncryptionAlgorithm($client_id = null) { return false; }
+    public function getPublicKey($client_id = null) { return Config::get('keys')['public']; }
+    public function getPrivateKey($client_id = null) { return Config::get('keys')['private']; }
+    public function getEncryptionAlgorithm($client_id = null) { return 'RS256'; }
 }

@@ -13,7 +13,7 @@ use OAuth2\GrantType\UserCredentials;
 use OAuth2\GrantType\RefreshToken;
 use OAuth2\GrantType\AuthorizationCode;
 
-class Auth {
+class OAuth2 {
     private $server     = null;
     private $storage    = null;
     private $db         = null;
@@ -93,7 +93,10 @@ class Auth {
             'user_table' => 'users'
         ]);
 
-        $server = new Server($storage);
+        $server = new Server($storage, [
+            'use_jwt_access_tokens' => true,
+            'access_lifetime' => 3600 * 24
+        ]);
 
         $server->addGrantType(new UserCredentials($storage));
         $server->addGrantType(new RefreshToken($storage, ["always_issue_new_refresh_token" => true]));

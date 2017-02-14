@@ -18,6 +18,7 @@ From there, you're all set!
 
 # Authenticating Users
 
+__Method__ `POST`
 ```
 v1/users/authenticate
 ```
@@ -42,6 +43,7 @@ __Response__
 
 # Validating Authentication
 
+__Method__ `any`
 ```
 v1/users/validate-authentication
 ```
@@ -68,6 +70,7 @@ __Response__
 
 # Refreshing JWTs
 
+__Method__ `POST`
 ```
 v1/users/authenticate
 ```
@@ -89,15 +92,13 @@ __Response__
 }
 ```
 
-# Registering User
+# Registering a User
 
+__Method__ `POST`
 ```
 v1/users/register
 ```
 
-__Method__ `POST`
-
-__Headers__ `Authorization: Bearer <token>`
 
 |parameter|description
 |---|---
@@ -122,5 +123,213 @@ __Response__
         "message": "bad email (example)",
         "code": 10
     }
+}
+```
+
+# Activating a User
+
+__Method__ `POST`
+```
+v1/users/activate
+```
+
+
+|parameter|description
+|---|---
+|email|user's email address
+|code|activation code created at registration time.
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {}
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+# Reset Password Request
+__Method__ `POST`
+```
+v1/users/reset-password-request
+```
+
+|parameter|description
+|---|---
+|email|user's email address
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {}
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+# Reset Password
+__Method__ `POST`
+```
+v1/users/reset-password
+```
+
+|parameter|description
+|---|---
+|email|user's email address
+|code|password reset code sent to them
+|password|new password
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {}
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+# Update user information
+__Method__ `POST`
+```
+v1/users/update
+```
+
+__Headers__
+```
+Authorization: Bearer <token>
+```
+
+|parameter|description
+|---|---
+|email|same or new email address
+|name|user's full name
+
+__Response__
+```json
+// success
+{
+    "status": "success",
+    "data": {
+        "reactivate": false
+    }
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+> Changing the email address requires the user to reactivate their account. They can continue to use it, but will be locked from continuing to do things that they were able to do with an activated account.
+>
+> If the user has not activated their account, then they will just need to do that with the newly provided email address
+
+# Change a password
+__Method__ `POST`
+```
+v1/users/change-password
+```
+
+__Headers__
+```
+Authorization: Bearer <token>
+```
+
+|parameter|description
+|---|---|
+|password|new password
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {}
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+# Deleting account
+__Method__ `POST`
+```
+v1/users/delete
+```
+
+__Headers__
+```
+Authorization: Bearer <token>
+```
+
+|parameter|description
+|---|---
+|email|current user's email
+|password|current user's password
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {}
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
+}
+```
+
+# Getting self
+__Method__ `GET`
+```
+v1/users/self
+```
+
+__Headers__
+```
+Authorization: Bearer <token>
+```
+
+__Response__
+```json
+// successful
+{
+    "status": "success",
+    "data": {
+        "user": {
+            ...
+        }
+    }
+}
+
+// error
+{
+    "status": "error",
+    "message": "somemessage"
 }
 ```

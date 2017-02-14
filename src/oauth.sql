@@ -44,7 +44,10 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `password` varchar(2000) DEFAULT NULL,
   `firstname` varchar(255) DEFAULT NULL,
-  `lastname` varchar(255) DEFAULT NULL
+  `lastname` varchar(255) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `activated` tinyint(1) NOT NULL,
+  'activationcode', varchar(128) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `user_permissions_rel` (

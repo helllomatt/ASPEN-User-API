@@ -8,8 +8,13 @@ use Exception;
 
 class User {
     private $db;
+    private $user;
     public function __construct(DB $db) {
         $this->db = $db;
+    }
+
+    public function info() {
+        return $this->user;
     }
 
     public function getById($id) {
@@ -22,12 +27,14 @@ class User {
         if ($query->count() == 0) throw new Exception('user does not exist');
 
         $user = $query->fetch()[0];
-        return $user;
+        $this->user = $user;
+        return $this;
     }
 
     public function getSelf() {
         $auth = new OAuth2();
-        return $this->getById($auth->getToken()['user_id']);
+        $this->getById($auth->getToken()['user_id']);
+        return $this;
     }
 
     public function getPermissions($userId) {
@@ -45,27 +52,24 @@ class User {
     }
 
     public function hasPermission($permission) {
-        $my = $this->getSelf();
-        return in_array($permission, $this->getPermissions($my['id']));
+        return in_array($permission, $this->getPermissions($this->user['id']));
     }
 
     public function addPermission($permission) {
-        $my = $this->getSelf();
-
         $permissions = new Permissions($this->db);
         $p = $permissions->getPermission($permission);
 
         if ($this->hasPermission($permission)) return true;
 
         CRUD::insert($this->db, 'user_permissions_rel', CRUD::compile([
-            'user_id' => $my['id'],
+            'user_id' => $this->user['id'],
             'permission_id' => $p['id']
         ]));
+
+        return true;
     }
 
     public function removePermission($permission) {
-        $my = $this->getSelf();
-
         $permissions = new Permissions($this->db);
         $p = $permissions->getPermission($permission);
 
@@ -73,7 +77,9 @@ class User {
 
         CRUD::delete($this->db, 'user_permissions_rel', [
             'expression' => 'user_id = :u && permission_id = :p',
-            'data' => [':u' => $my['id'], ':p' => $p['id']]
+            'data' => [':u' => $this->user['id'], ':p' => $p['id']]
         ]);
+
+        return true;
     }
 }

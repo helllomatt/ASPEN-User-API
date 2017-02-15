@@ -290,25 +290,31 @@ $app->get('users/self', function(Connector $c) {
     }
 });
 
-// $app->get('users/test', function() {
-//     $db = (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
-//     $user = new Users\User($db);
-//
-//     $response = new Response();
-//     try {
-//         $permissions = new Users\Permissions($db);
-//
-//         $response->add('permission to add user', $user->hasPermission('add-users'));
-//         $response->add('permission to create blog posts', $user->hasPermission('create-blog-posts'));
-//         $response->add('new permission', $permissions->create('some-permission'));
-//         $user->addPermission('some-permission');
-//         $user->removePermission('some-permission');
-//         $permissions->delete('some-permission');
-//         $response->add('permissions', $user->getPermissions(1));
-//         $response->success();
-//     } catch(Exception $e) {
-//         $response->error($e->getMessage());
-//     }
-// });
+$app->get('users/test', function() {
+    $db = (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
+    $user = new Users\User($db);
+
+    $response = new Response();
+    try {
+        $permissions = new Users\Permissions($db);
+
+        //$permissions->create('add-users');
+        $user->getSelf()->addPermission('get-user-identities');
+        if ($user->getSelf()->hasPermission('add-users')) {
+            $response->add('can', 'add-users');
+        } else {
+            $response->add('cannot', 'add-users');
+        }
+
+        // $response->add('new permission', $permissions->create('some-permission'));
+        // $user->addPermission('some-permission');
+        // $user->removePermission('some-permission');
+        // $permissions->delete('some-permission');
+        // $response->add('permissions', $user->getPermissions(1));
+        $response->success();
+    } catch(Exception $e) {
+        $response->error($e->getMessage());
+    }
+});
 
 return $app;

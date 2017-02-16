@@ -206,5 +206,7 @@ class User {
             'expression'    => 'id = :id',
             'data'          => [':id' => $user->info()['id']]
         ]);
+
+        return true;
     }
 }

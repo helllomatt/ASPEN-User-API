@@ -47,7 +47,14 @@ CREATE TABLE `users` (
   `lastname` varchar(255) DEFAULT NULL,
   `created` datetime NOT NULL,
   `activated` tinyint(1) NOT NULL,
-  'activationcode', varchar(128) NOT NULL
+  `activationcode` varchar(128) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `users_password_reset_requests` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `code` varchar(128) NOT NULL,
+  `expires` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `user_permissions_rel` (
@@ -73,8 +80,14 @@ ALTER TABLE `permissions`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`);
 
+ALTER TABLE `users_password_reset_requests`
+  ADD PRIMARY KEY (`id`);
+
 ALTER TABLE `permissions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+ALTER TABLE `users_password_reset_requests`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;

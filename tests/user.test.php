@@ -105,6 +105,56 @@ class UserTest extends \PHPUnit_Framework_TestCase {
         User::delete(static::$db, $user, 'john.smith@example.com', '');
     }
 
+    public function testCreatingPermission() {
+        $this->assertEquals(1, (new Permissions(static::$db))->create('test'));
+    }
+
+    public function testCreatingPermissionThatExists() {
+        $this->expectException('\Exception');
+        (new Permissions(static::$db))->create('test');
+    }
+
+    public function testAddingPermissionToUser() {
+        $user = (new User(static::$db))->getById(1);
+        $user->addPermission('test');
+        $this->assertTrue($user->hasPermission('test'));
+    }
+
+    public function testAddingPermissionToUserAgain() {
+        $this->assertTrue((new User(static::$db))->getById(1)->addPermission('test'));
+    }
+
+    public function testAddingBadPermissionToUser() {
+        $this->expectException('\Exception');
+        $user = (new User(static::$db))->getById(1)->addPermission('asdf');
+    }
+
+    public function testGettingUsersPermissions() {
+        $user = (new User(static::$db))->getById(1);
+        $this->assertEquals(['test'], $user->getPermissions());
+    }
+
+    public function testRemovingPermissionFromUser() {
+        $user = (new User(static::$db))->getById(1);
+        $user->removePermission('test');
+        $this->assertFalse($user->hasPermission('test'));
+    }
+
+    public function testRemovingBadPermissionFromUser() {
+        $this->expectException('\Exception');
+        $user = (new User(static::$db))->getById(1)->addPermission('asdf');
+    }
+
+    public function testDeletingPermission() {
+        $permissions = (new Permissions(static::$db));
+        $user = (new User(static::$db))->getById(1);
+        $user->addPermission('test');
+
+        $this->assertTrue($user->hasPermission('test'));
+        $permissions->delete('test');
+        $this->assertFalse($user->hasPermission('test'));
+    }
+
     public function testDeletingUser() {
         $user = (new User(static::$db))->getById(1);
         User::delete(static::$db, $user, 'john@example.com', 'change', true);

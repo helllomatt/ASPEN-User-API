@@ -53,12 +53,12 @@ class User {
         return $this;
     }
 
-    public function getPermissions($userId) {
+    public function getPermissions() {
         $query = $this->db->query('select')
             ->columns(['permission'])
             ->from('permissions p')
             ->join('left', 'user_permissions_rel upr', 'upr.permission_id = p.id')
-            ->where('upr.user_id = :id', [':id' => $userId])
+            ->where('upr.user_id = :id', [':id' => $this->user['id']])
             ->execute();
 
         if ($query->failed()) throw new Exception('failed to get user permissions');

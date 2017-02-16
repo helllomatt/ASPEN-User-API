@@ -20,7 +20,7 @@
     <php>
         <const name="database_host" value="127.0.0.1" />
         <const name="database_username" value="root" />
-        <const name="database_password" value="root" />
+        <const name="database_password" value="" />
         <const name="database_name" value="test" />
     </php>
 </phpunit>

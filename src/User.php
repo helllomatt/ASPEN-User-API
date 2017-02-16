@@ -53,6 +53,10 @@ class User {
         return $this;
     }
 
+    public function isActivated() {
+        return $this->user['activated'] == 1;
+    }
+
     public function getPermissions() {
         $query = $this->db->query('select')
             ->columns(['permission'])

@@ -34,9 +34,17 @@ class UserTest extends \PHPUnit_Framework_TestCase {
         User::register(static::$db, 'john.smith@example.com', ['first' => 'John', 'last' => 'Smith'], 'pwd');
     }
 
+    public function testActivatedStatusAfterRegistration() {
+        $this->assertFalse((new User(static::$db))->getById(1)->isActivated());
+    }
+
     public function testActivating() {
         $user = (new User(static::$db))->getByEmail('john.smith@example.com');
         $this->assertTrue(User::activate(static::$db, $user, 'john.smith@example.com', 'code'));
+    }
+
+    public function testActivatedStatusAfterActivating() {
+        $this->assertTrue((new User(static::$db))->getById(1)->isActivated());
     }
 
     public function testBadEmailActivation() {
@@ -84,6 +92,10 @@ class UserTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('john@example.com', $user->info()['email']);
         $this->assertEquals('S', $user->info()['lastname']);
         $this->assertTrue($reactivate);
+    }
+
+    public function testActivatedStatusAfterUpdating() {
+        $this->assertFalse((new User(static::$db))->getById(1)->isActivated());
     }
 
     public function testChangingPassword() {

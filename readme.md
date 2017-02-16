@@ -23,3 +23,8 @@ Setting up the database:
 3. Import `oauth.sql` into your database
 
 After that, you're ready to use the API.
+
+## Running tests
+Tests require an actual database connection.
+
+Modify the `phpunit.xml` file to reflect your database setup for running tests.

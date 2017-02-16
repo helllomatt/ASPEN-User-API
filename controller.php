@@ -7,13 +7,14 @@ use Double\DB;
 use Basically\CRUD;
 
 use Users\OAuth2;
-
-$app = new ASPEN\App('OAuth2');
-$app->version(1);
+use Users\User;
 
 function getUserDB() {
     return (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
 }
+
+$app = new ASPEN\App('OAuth2');
+$app->version(1);
 
 $app->get('users/authenticate/', function() {
     $auth = new Users\OAuth2();
@@ -26,6 +27,7 @@ $app->get('users/validate-authentication/', function() {
 
     $response = new Response();
     if ($auth->valid()) {
+        $response->add('token', $auth->getToken());
         $response->success();
     } else {
         $response->error('Unauthorized.');
@@ -41,9 +43,9 @@ $app->get('users/register/', function(Connector $c) {
         $name       = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss']);
         $password   = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
 
-        $db = Users\getUserDB();
+        $db = getUserDB();
 
-        $id = Users\User::register($response, $db, $email, $name, $password);
+        $id = User::register($db, $email, $name, $password);
         $response->add('id', $id);
         $response->success();
     } catch(Exception $e) {
@@ -59,10 +61,10 @@ $app->get('users/activate/', function(Connector $c) {
         $code   = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
         $email  = CRUD::sanitize($c->getVariable('email'), ['email']);
 
-        $db = Users\getUserDB();
-        $user = (new Users\User($db))->getByEmail($email);
+        $db = getUserDB();
+        $user = (new User($db))->getByEmail($email);
 
-        Users\User::activate($db, $user, $email, $code)
+        User::activate($db, $user, $email, $code);
         $response->success();
     } catch(Exception $e) {
         $response->error($e->getMessage());
@@ -77,9 +79,9 @@ $app->get('users/reset-password-request', function(Connector $c) {
         $email = CRUD::sanitize($c->getVariable('email'), ['email']);
 
         $db = getUserDB();
-        $user = (new Users\User($db))->getByEmail($email);
+        $user = (new User($db))->getByEmail($email);
 
-        Users\User::resetPasswordRequest($db, $user);
+        User::resetPasswordRequest($db, $user);
 
         $response->success();
     } catch(Exception $e) {
@@ -97,9 +99,9 @@ $app->get('users/reset-password', function(Connector $c) {
         $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
 
         $db = getUserDb();
-        $user = (new Users\User($db))->getByEmail($email);
+        $user = (new User($db))->getByEmail($email);
 
-        Users\User::resetPassword($db, $user, $password, $code);
+        User::resetPassword($db, $user, $password, $code);
         $response->success();
     } catch(Exception $e) {
         $response->error($e->getMessage());
@@ -123,7 +125,7 @@ $app->get('users/update', function(Connector $c) {
             $user = (new User($db))->getSelf();
 
             $reactivate = false;
-            Users\User::update($db, $user, $reactivate, $email, $name);
+            User::update($db, $user, $reactivate, $email, $name);
             $response->add('reactivate', $reactivate);
             $response->success();
         } catch(Exception $e) {
@@ -147,7 +149,7 @@ $app->get('users/change-password', function(Connector $c) {
             $db   = getUserDB();
             $user = (new User($db))->getSelf();
 
-            Users\User::changePassword($db, $user, $password);
+            User::changePassword($db, $user, $password);
             $response->success();
         } catch(Exception $e) {
             $response->error($e->getMessage());
@@ -169,9 +171,9 @@ $app->get('users/delete', function(Connector $c) {
             $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required']);
 
             $db   = getUserDB();
-            $user = (new Users\User($db))->getSelf();
+            $user = (new User($db))->getSelf();
 
-            Users\User::delete($db, $user, $email, $password);
+            User::delete($db, $user, $email, $password);
             $response->success();
         } catch(Exception $e) {
             $response->error($e->getMessage());
@@ -197,6 +199,7 @@ $app->get('users/self', function(Connector $c) {
             if ($query->count() == 0) throw new Exception('you do not exist.');
             $user = $query->fetch()[0];
             unset($user['password']);
+            unset($user['activationcode']);
 
             $response->add('user', $user);
             $response->success();
@@ -208,7 +211,7 @@ $app->get('users/self', function(Connector $c) {
 
 // $app->get('users/test', function() {
 //     $db = (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
-//     $user = new Users\User($db);
+//     $user = new User($db);
 //
 //     $response = new Response();
 //     try {

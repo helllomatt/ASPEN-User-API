@@ -1,6 +1,6 @@
 {
     "name": "helllomatt/aspen-user-api",
-    "version": "0.4.1",
+    "version": "1.0",
     "description": "API module for the ASPEN framework to manage users and authentication.",
     "keywords": ["api", "users", "management", "aspen", "auth", "oauth2"],
     "license": "MIT",
@@ -18,7 +18,7 @@
         "bshaffer/oauth2-server-php": "~1.8"
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.5"
+        "phpunit/phpunit": "^5.7"
     },
     "autoload": {
         "psr-4": {

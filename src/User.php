@@ -17,6 +17,29 @@ class User {
         return $this->user;
     }
 
+    public function login($username, $password) {
+        $query = $this->db->query('select')->from('users')
+            ->where('email = :e', [':e' => $username])
+            ->execute();
+
+        if ($query->failed()) throw new Exception('Failed to log in. Please try again later.');
+        if ($query->count() == 0) throw new Exception('Invalid username or password.');
+        $user = $query->fetch()[0];
+
+        if (!password_verify($password, $user['password'])) {
+            throw new Exception('Invalid username or password.');
+        }
+
+        $_SESSION['user'] = $user;
+
+        return $this;
+    }
+
+    public static function logout() {
+        unset($_SESSION['user']);
+        session_destroy();
+    }
+
     public function getById($id, $returnExists = false) {
         $query = $this->db->query('select')
             ->from('users')
@@ -24,7 +47,8 @@ class User {
             ->execute();
 
         if ($query->failed()) throw new Exception('failed to get user');
-        if (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
+        elseif ($returnExists && $query->failed()) return false;
+        elseif (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
         elseif ($returnExists) return $query->count() == 1;
 
         $user = $query->fetch()[0];
@@ -38,8 +62,9 @@ class User {
             ->where('email = :e', [':e' => $email])
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to get user');
-        if (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
+        if ($query->failed() && !$returnExists) throw new Exception('failed to get user');
+        elseif ($returnExists && $query->failed()) return false;
+        elseif (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
         elseif ($returnExists) return $query->count() == 1;
 
         $user = $query->fetch()[0];
@@ -48,7 +73,7 @@ class User {
     }
 
     public function getSelf() {
-        $auth = new OAuth2();
+        $auth = new OAuth2($this->db);
         $this->getById($auth->getToken()['user_id']);
         return $this;
     }

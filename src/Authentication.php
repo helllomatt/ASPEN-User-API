@@ -19,13 +19,8 @@ class OAuth2 {
     private $db         = null;
     private $valid = false;
 
-    public function __construct() {
-        $database_name = Config::get("db")['dbname'];
-        $database_host = Config::get("db")['host'];
-        $database_user = Config::get("db")['username'];
-        $database_pass = Config::get("db")['password'];
-
-        $this->db = (new DB())->connect($database_host, $database_user, $database_pass, $database_name);
+    public function __construct($db) {
+        $this->db = $db;
         $this->createServer();
     }
 
@@ -34,7 +29,8 @@ class OAuth2 {
     }
 
     public function validate($throw = false) {
-        if ($this->server->verifyResourceRequest(Request::createFromGlobals())) $this->valid = true;
+        if (array_key_exists('user', $_SESSION)) $this->valid = true;
+        elseif ($this->server->verifyResourceRequest(Request::createFromGlobals())) $this->valid = true;
     }
 
     public function valid() {
@@ -59,7 +55,11 @@ class OAuth2 {
     }
 
     public function getToken() {
-        return $this->server->getAccessTokenData(Request::createFromGlobals());
+        $token = $this->server->getAccessTokenData(Request::createFromGlobals());
+        if ($token != null) return $token;
+        return [
+            'user_id' => $_SESSION['user']['id']
+        ];
     }
 
     public function getUser() {

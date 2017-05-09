@@ -10,7 +10,7 @@ class UserTest extends \PHPUnit_Framework_TestCase {
     public static function setUpBeforeClass() {
         static::$db = (new DB)->connect(database_host, database_username, database_password, database_name);
         echo 'Setting up test tables...'.PHP_EOL;
-        foreach (explode(';', file_get_contents('src/oauth.sql')) as $query) {
+        foreach (explode(';', file_get_contents('db.sql')) as $query) {
             $query = trim($query);
             if ($query != '') static::$db->query('verbatim')->sql($query)->execute();
         }

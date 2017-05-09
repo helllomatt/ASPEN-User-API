@@ -93,10 +93,7 @@ class OAuth2 {
             'user_table' => 'users'
         ]);
 
-        $server = new Server($storage, [
-            'use_jwt_access_tokens' => true,
-            'access_lifetime' => 3600 * 24
-        ]);
+        $server = new Server($storage);
 
         $server->addGrantType(new UserCredentials($storage));
         $server->addGrantType(new RefreshToken($storage, ["always_issue_new_refresh_token" => true]));

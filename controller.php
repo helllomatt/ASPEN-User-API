@@ -1,5 +1,7 @@
 <?php
 
+use ASPEN\API;
+use ASPEN\Endpoint;
 use ASPEN\Connector;
 use ASPEN\Response;
 use ASPEN\Config;
@@ -9,231 +11,229 @@ use Basically\CRUD;
 use Users\OAuth2;
 use Users\User;
 
-function getUserDB() {
-    return (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
-}
+$api = new API('User');
+$api->version(1);
 
-$app = new ASPEN\App('OAuth2');
-$app->version(1);
+$api->add((new Endpoint([
+        'to'     => 'users/login/',
+        'method' => 'post'
+    ]))->then(function (Response $response, Connector $c) {
+        $db = $c->getDB('accounts');
 
-$app->get('users/authenticate/', function() {
-    $auth = new Users\OAuth2();
-    $auth->handleTokenRequest();
-});
+        $username = CRUD::sanitize($c->getVariable('username'), ['string', 'required', 'xss', 'notags']);
+        $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required', 'xss', 'notags']);
 
-$app->get('users/validate-authentication/', function() {
-    $auth = new Users\OAuth2();
-    $auth->validate();
-
-    $response = new Response();
-    if ($auth->valid()) {
-        $response->add('token', $auth->getToken());
-        $response->success();
-    } else {
-        $response->error('Unauthorized.');
-    }
-});
-
-$app->get('users/register/', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-
-    $response = new Response();
-    try {
-        $email      = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-        $name       = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss']);
-        $password   = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
-
-        $db = getUserDB();
-
-        $id = User::register($db, $email, $name, $password);
-        $response->add('id', $id);
-        $response->success();
-    } catch(Exception $e) {
-        $response->error($e->getMessage());
-    }
-});
-
-$app->get('users/activate/', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-
-    $response = new Response();
-    try {
-        $code   = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
-        $email  = CRUD::sanitize($c->getVariable('email'), ['email']);
-
-        $db = getUserDB();
-        $user = (new User($db))->getByEmail($email);
-
-        User::activate($db, $user, $email, $code);
-        $response->success();
-    } catch(Exception $e) {
-        $response->error($e->getMessage());
-    }
-});
-
-$app->get('users/reset-password-request', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-
-    $response = new Response();
-    try {
-        $email = CRUD::sanitize($c->getVariable('email'), ['email']);
-
-        $db = getUserDB();
-        $user = (new User($db))->getByEmail($email);
-
-        User::resetPasswordRequest($db, $user);
+        $user = (new User($db))->login($username, $password);
 
         $response->success();
-    } catch(Exception $e) {
-        $response->error($e->getMessage());
-    }
-});
+    }));
 
-$app->get('users/reset-password', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
+$api->add((new Endpoint([
+        'to'     => 'users/logout/',
+        'method' => 'get'
+    ]))->then(function (Response $response, Connector $c) {
+        User::logout();
 
-    $response = new Response();
-    try {
-        $code     = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
-        $email    = CRUD::sanitize($c->getVariable('email'), ['email']);
-        $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
-
-        $db = getUserDb();
-        $user = (new User($db))->getByEmail($email);
-
-        User::resetPassword($db, $user, $password, $code);
         $response->success();
-    } catch(Exception $e) {
-        $response->error($e->getMessage());
-    }
-});
+    }));
 
-$app->get('users/update', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-    $auth = new Users\OAuth2();
-    $auth->validate();
+$api->add((new Endpoint([
+        'to' => 'users/authenticate/'
+    ]))->then(function(Response $r, Connector $c) {
+        $auth = new Oauth2($c->getDB('accounts'));
+        $auth->handleTokenRequest();
+    }));
 
-    $response = new Response();
-    if (!$auth->valid()) {
-        $response->error('Unauthorized.');
-    } else {
+$api->add((new Endpoint([
+        'to' => 'users/validate-authentication/'
+    ]))->then(function(Response $response, Connector $c) {
+        $auth = new OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if ($auth->valid()) {
+            $response->success();
+        } else {
+            $response->error('Unauthorized.');
+        }
+    }));
+
+$api->add((new Endpoint([
+        'to'     => 'users/register/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
         try {
-            $email = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-            $name  = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full']);
+            $email      = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
+            $name       = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss']);
+            $password   = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
 
-            $db   = getUserDB();
-            $user = (new User($db))->getSelf();
+            $db = $c->getDB('accounts');
 
-            $reactivate = false;
-            User::update($db, $user, $reactivate, $email, $name);
-            $response->add('reactivate', $reactivate);
+            $id = User::register($db, $email, $name, $password);
+            $response->add('id', $id);
             $response->success();
         } catch(Exception $e) {
             $response->error($e->getMessage());
         }
-    }
-});
+    }));
 
-$app->get('users/change-password', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-    $auth = new Users\OAuth2();
-    $auth->validate();
-
-    $response = new Response();
-    if (!$auth->valid()) {
-        $response->error('Unauthorized.');
-    } else {
+$api->add((new Endpoint([
+        'to'     => 'users/activate/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
         try {
+            $code   = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
+            $email  = CRUD::sanitize($c->getVariable('email'), ['email']);
+
+            $db = $c->getDB('accounts');
+            $user = (new User($db))->getByEmail($email);
+
+            User::activate($db, $user, $email, $code);
+            $response->success();
+        } catch(Exception $e) {
+            $response->error($e->getMessage());
+        }
+    }));
+
+$api->add((new Endpoint([
+        'to'     => 'users/reset-password-request/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
+        try {
+            $email = CRUD::sanitize($c->getVariable('email'), ['email']);
+
+            $db = $c->getDB('accounts');
+            $user = (new User($db))->getByEmail($email);
+
+            User::resetPasswordRequest($db, $user);
+
+            $response->success();
+        } catch(Exception $e) {
+            $response->error($e->getMessage());
+        }
+    }));
+
+$api->add((new Endpoint([
+        'to'     => 'users/reset-password/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
+        try {
+            $code     = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
+            $email    = CRUD::sanitize($c->getVariable('email'), ['email']);
             $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
 
-            $db   = getUserDB();
-            $user = (new User($db))->getSelf();
+            $db = $c->getDB('accounts');
+            $user = (new User($db))->getByEmail($email);
 
-            User::changePassword($db, $user, $password);
+            User::resetPassword($db, $user, $password, $code);
             $response->success();
         } catch(Exception $e) {
             $response->error($e->getMessage());
         }
-    }
-});
+    }));
 
-$app->get('users/delete', function(Connector $c) {
-    if (!$c->usingMethod('POST')) return false;
-    $auth = new Users\OAuth2();
-    $auth->validate();
+$api->add((new Endpoint([
+        'to'     => 'users/update/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
 
-    $response = new Response();
-    if (!$auth->valid()) {
-        $response->error('Unauthorized.');
-    } else {
-        try {
-            $email    = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-            $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required']);
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            try {
+                $email = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
+                $name  = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full']);
 
-            $db   = getUserDB();
-            $user = (new User($db))->getSelf();
+                $db   = $c->getDB('accounts');
+                $user = (new User($db))->getSelf();
 
-            User::delete($db, $user, $email, $password);
-            $response->success();
-        } catch(Exception $e) {
-            $response->error($e->getMessage());
+                $reactivate = false;
+                User::update($db, $user, $reactivate, $email, $name);
+                $response->add('reactivate', $reactivate);
+                $response->success();
+            } catch(Exception $e) {
+                $response->error($e->getMessage());
+            }
         }
-    }
-});
+    }));
 
-$app->get('users/self', function(Connector $c) {
-    if (!$c->usingMethod('GET')) return false;
-    $auth = new Users\OAuth2();
-    $auth->validate();
+$api->add((new Endpoint([
+        'to'     => 'users/change-password/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
 
-    $response = new Response();
-    if (!$auth->valid()) {
-        $response->error('Unauthorized.');
-    } else {
-        try {
-            $userId = $auth->getToken()['user_id'];
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            try {
+                $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
 
-            $db = (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
-            $query = $db->query('select')->from('users')->where('id = :id', [':id' => $userId])->execute();
-            if ($query->failed()) throw new Exception('failed to get user');
-            if ($query->count() == 0) throw new Exception('you do not exist.');
-            $user = $query->fetch()[0];
-            unset($user['password']);
-            unset($user['activationcode']);
+                $db   = $c->getDB('accounts');
+                $user = (new User($db))->getSelf();
 
-            $response->add('user', $user);
-            $response->success();
-        } catch(Exception $e) {
-            $response->error($e->getMessage());
+                User::changePassword($db, $user, $password);
+                $response->success();
+            } catch(Exception $e) {
+                $response->error($e->getMessage());
+            }
         }
-    }
-});
+    }));
 
-// $app->get('users/test', function() {
-//     $db = (new DB())->connect(Config::get("db")['host'], Config::get("db")['username'], Config::get("db")['password'], Config::get("db")['dbname']);
-//     $user = new User($db);
-//
-//     $response = new Response();
-//     try {
-//         $permissions = new Users\Permissions($db);
-//
-//         $permissions->create('add-users');
-//         $user->getSelf()->addPermission('get-user-identities');
-//         if ($user->getSelf()->hasPermission('add-users')) {
-//             $response->add('can', 'add-users');
-//         } else {
-//             $response->add('cannot', 'add-users');
-//         }
-//
-//         $response->add('new permission', $permissions->create('some-permission'));
-//         $user->addPermission('some-permission');
-//         $user->removePermission('some-permission');
-//         $permissions->delete('some-permission');
-//         $response->add('permissions', $user->getPermissions(1));
-//         $response->success();
-//     } catch(Exception $e) {
-//         $response->error($e->getMessage());
-//     }
-// });
+$api->add((new Endpoint([
+        'to'     => 'users/delete/',
+        'method' => 'post'
+    ]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
 
-return $app;
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            try {
+                $email    = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
+                $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required']);
+
+                $db   = $c->getDB('accounts');
+                $user = (new User($db))->getSelf();
+
+                User::delete($db, $user, $email, $password);
+                $response->success();
+            } catch(Exception $e) {
+                $response->error($e->getMessage());
+            }
+        }
+    }));
+
+$api->add((new Endpoint([
+        'to'     => 'users/self/',
+        'method' => 'get'
+    ]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            try {
+                $userId = $auth->getToken()['user_id'];
+
+                $db = $c->getDB('accounts');
+                $query = $db->query('select')->from('users')->where('id = :id', [':id' => $userId])->execute();
+                if ($query->failed()) throw new Exception('failed to get user');
+                if ($query->count() == 0) throw new Exception('you do not exist.');
+                $user = $query->fetch()[0];
+                unset($user['password']);
+                unset($user['activationcode']);
+
+                $response->add('user', $user);
+                $response->success();
+            } catch(Exception $e) {
+                $response->error($e->getMessage());
+            }
+        }
+    }));
+
+return $api;

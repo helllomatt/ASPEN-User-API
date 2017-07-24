@@ -86,7 +86,7 @@ class User {
         $query = $this->db->query('select')
             ->columns(['permission'])
             ->from('permissions p')
-            ->join('left', 'user_permissions_rel upr', 'upr.permission_id = p.id')
+            ->join('left', 'user_permissions upr', 'upr.permission_id = p.id')
             ->where('upr.user_id = :id', [':id' => $this->user['id']])
             ->execute();
 
@@ -106,7 +106,7 @@ class User {
 
         if ($this->hasPermission($permission)) return true;
 
-        CRUD::insert($this->db, 'user_permissions_rel', CRUD::compile([
+        CRUD::insert($this->db, 'user_permissions', CRUD::compile([
             'user_id' => $this->user['id'],
             'permission_id' => $p['id']
         ]));
@@ -120,7 +120,7 @@ class User {
 
         if (!$this->hasPermission($permission)) return true;
 
-        CRUD::delete($this->db, 'user_permissions_rel', [
+        CRUD::delete($this->db, 'user_permissions', [
             'expression' => 'user_id = :u && permission_id = :p',
             'data' => [':u' => $this->user['id'], ':p' => $p['id']]
         ]);
@@ -130,7 +130,7 @@ class User {
 
     public function hasPasswordRequestSent($returnRequest = false) {
         $query = $this->db->query('select')
-            ->from('users_password_reset_requests')
+            ->from('user_password_reset_requests')
             ->where('user_id = :uid && expires > now()', [':uid' => $this->user['id']])
             ->order_by('expires', 'DESC')
             ->execute();
@@ -171,7 +171,7 @@ class User {
     public static function resetPasswordRequest(DB $db, User $user, $code = null) {
         if ($user->hasPasswordRequestSent()) throw new Exception('already sent password reset request.');
         if (!$code) $code = hash('SHA512', mt_rand(100000, 999999).time().uniqid());
-        CRUD::insert($db, 'users_password_reset_requests', CRUD::compile([
+        CRUD::insert($db, 'user_password_reset_requests', CRUD::compile([
             'user_id'   => $user->info()['id'],
             'code'      => $code,
             'expires'   => date('Y-m-d h:i:S', strtotime('+1 day'))
@@ -191,7 +191,7 @@ class User {
             'data'          => [':id' => $user->info()['id']]
         ]);
 
-        CRUD::delete($db, 'users_password_reset_requests', [
+        CRUD::delete($db, 'user_password_reset_requests', [
             'expression'    => 'id = :id',
             'data'          => [':id' => $request['id']]
         ]);

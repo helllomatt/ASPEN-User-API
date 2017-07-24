@@ -38,12 +38,12 @@ class Pdo implements AuthorizationCodeInterface, AccessTokenInterface,
         else $this->db = (new DB())->connect($c['host'], $c['username'], $c['password'], $c['database']);
 
         $this->config = array_merge([
-            "client_table"                  => "oauth_clients",
-            "access_token_table"            => "oauth_access_tokens",
-            "refresh_token_table"           => "oauth_refresh_tokens",
+            "client_table"                  => "auth_clients",
+            "access_token_table"            => "user_access_tokens",
+            "refresh_token_table"           => "user_refresh_tokens",
             "code_table"                    => "oauth_authorization_codes",
-            "user_table"                    => "oauth_users",
-            "user_permissions_rel_table"    => "user_permissions_rel",
+            "user_table"                    => "users",
+            "user_permissions_rel_table"    => "user_permissions",
             "permissions_table"             => "permissions",
             "jwt_table"                     => "oauth_jwt",
             "jti_table"                     => "oauth_jti",
@@ -292,24 +292,11 @@ class Pdo implements AuthorizationCodeInterface, AccessTokenInterface,
     }
 
     public function scopeExists($scope) {
-        $scope = explode(' ', $scope);
-        $whereIn = implode(',', array_fill(0, count($scope), '?'));
-
-        $query = $this->db->query("count")->columns(["scope as count"])->from($this->config['scope_table'])->where("scope IN (:s)", [":s" => $whereIn])->execute();
-        if ($query->failed() || $query->count() == 0) return false;
-
-        $result = $query->fetch()[0];
-        return $result['count'] == count($scope);
+        return true;
     }
 
     public function getDefaultScope($client_id = null) {
-        $query = $this->db->query("select")->columns(['scope'])->from($this->config['scope_table'])->where("is_default = :id", [":id" => true])->execute();
-        if ($query->failed() || $query->count() == 0) return null;
-        $results = $query->fetch();
-
-        $defaultScope = array_map(function ($row) { return $row['scope']; }, $results);
-
-        return implode(" ", $defaultScope);
+        return '';
     }
 
     public function getClientKey($client_id, $subject) {
@@ -324,8 +311,6 @@ class Pdo implements AuthorizationCodeInterface, AccessTokenInterface,
     }
 
     public function getClientScope($client_id) {
-        if (!$clientDetails = $this->getClientDetails($client_id)) return false;
-        if (isset($clientDetails['scope'])) return $clientDetails['scope'];
         return null;
     }
 

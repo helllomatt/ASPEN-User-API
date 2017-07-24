@@ -1,13 +1,15 @@
-CREATE TABLE `oauth_access_tokens` (
+CREATE TABLE `user_access_tokens` (
   `access_token` varchar(40) NOT NULL,
+  PRIMARY KEY (`access_token`),
   `client_id` varchar(80) NOT NULL,
   `user_id` varchar(255) DEFAULT NULL,
   `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `scope` varchar(2000) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `oauth_clients` (
+CREATE TABLE `auth_clients` (
   `client_id` varchar(80) NOT NULL,
+  PRIMARY KEY (`client_id`),
   `client_secret` varchar(80) DEFAULT NULL,
   `redirect_uri` varchar(2000) NOT NULL,
   `grant_types` varchar(80) DEFAULT NULL,
@@ -15,26 +17,24 @@ CREATE TABLE `oauth_clients` (
   `user_id` varchar(80) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `oauth_refresh_tokens` (
+CREATE TABLE `user_refresh_tokens` (
   `refresh_token` varchar(40) NOT NULL,
+  PRIMARY KEY (`refresh_token`),
   `client_id` varchar(80) NOT NULL,
   `user_id` varchar(255) DEFAULT NULL,
   `expires` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `scope` varchar(2000) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `oauth_scopes` (
-  `scope` text,
-  `is_default` tinyint(1) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE `permissions` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
   `permission` varchar(200) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
   `email` varchar(255) NOT NULL,
   `password` varchar(2000) DEFAULT NULL,
   `firstname` varchar(255) DEFAULT NULL,
@@ -44,41 +44,15 @@ CREATE TABLE `users` (
   `activationcode` varchar(128) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `users_password_reset_requests` (
-  `id` int(11) NOT NULL,
+CREATE TABLE `user_password_reset_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
   `user_id` int(11) NOT NULL,
   `code` varchar(128) NOT NULL,
   `expires` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `user_permissions_rel` (
+CREATE TABLE `user_permissions` (
   `user_id` int(11) NOT NULL,
   `permission_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-ALTER TABLE `oauth_access_tokens`
-  ADD PRIMARY KEY (`access_token`);
-
-ALTER TABLE `oauth_clients`
-  ADD PRIMARY KEY (`client_id`);
-
-ALTER TABLE `oauth_refresh_tokens`
-  ADD PRIMARY KEY (`refresh_token`);
-
-ALTER TABLE `permissions`
-  ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `users_password_reset_requests`
-  ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `permissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-
-ALTER TABLE `users_password_reset_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;

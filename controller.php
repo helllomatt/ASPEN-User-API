@@ -20,7 +20,7 @@ $api->add((new Endpoint([
     ]))->then(function (Response $response, Connector $c) {
         $db = $c->getDB('accounts');
 
-        $username = CRUD::sanitize($c->getVariable('username'), ['string', 'required', 'xss', 'notags']);
+        $username = CRUD::sanitize($c->getVariable('email'), ['string', 'required', 'xss', 'notags']);
         $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required', 'xss', 'notags']);
 
         $user = (new User($db))->login($username, $password);

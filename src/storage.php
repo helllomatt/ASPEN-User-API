@@ -251,7 +251,9 @@ class Pdo implements AuthorizationCodeInterface, AccessTokenInterface,
     }
 
     protected function checkPassword($user, $password) {
-        return password_verify($password, $user['password']);
+        $authfunc = Config::get('user-auth-function');
+        if ($authfunc != false) return $authfunc($user['password'], $password);
+        else return password_verify($password, $user['password']);
     }
 
     public function getUser($id) {

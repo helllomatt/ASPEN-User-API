@@ -24,19 +24,42 @@ class OAuth2 {
         $this->createServer();
     }
 
+    /**
+     * Handles the token request
+     *
+     * @return void
+     */
     public function handleTokenRequest() {
         $this->server->handleTokenRequest(Request::createFromGlobals())->send();
     }
 
+    /**
+     * Validates a token
+     *
+     * @param  boolean $throw
+     * @return void
+     */
     public function validate($throw = false) {
         if (array_key_exists('user', $_SESSION)) $this->valid = true;
         elseif ($this->server->verifyResourceRequest(Request::createFromGlobals())) $this->valid = true;
     }
 
+    /**
+     * Returns the validity status of a token
+     *
+     * @return boolean
+     */
     public function valid() {
         return $this->valid;
     }
 
+    /**
+     * Requires a valid token, this is a shortcut function.
+     *
+     * I don't know how I feel about die(). Leaning towards it being wrong.
+     *
+     * @return void
+     */
     public function requireValidToken() {
         $this->validate();
         if (!$this->valid()) {
@@ -46,14 +69,29 @@ class OAuth2 {
         }
     }
 
+    /**
+     * Returns the storage object
+     *
+     * @return Users\Pdo
+     */
     public function getStorage() {
         return $this->storage;
     }
 
+    /**
+     * Returns the server object
+     *
+     * @return OAuth2\Server
+     */
     public function getServer() {
         return $this->server;
     }
 
+    /**
+     * Gets the token information from the request
+     *
+     * @return array
+     */
     public function getToken() {
         $token = $this->server->getAccessTokenData(Request::createFromGlobals());
         if ($token != null) return $token;
@@ -62,30 +100,11 @@ class OAuth2 {
         ];
     }
 
-    public function getUser() {
-        $token = $this->getToken();
-        $query = $this->db->query("select")
-            ->columns(["email", "firstname", "lastname"])
-            ->from("users")
-            ->where("id = :uid", [":uid" => $token['user_id']])
-            ->execute();
-
-        if ($query->failed() || $query->count() == 0) return [];
-        return array_merge($query->fetch()[0], $this->storage->getPermissions($token['user_id']));
-    }
-
-    public function requirePermission($permission = '') {
-        $this->requireValidToken();
-        $user = $this->getUser();
-        if (!$user || !in_array($permission, $user['permissions'])) {
-            $response = new Response();
-            $response->error('Invalid permission');
-            die();
-        }
-
-        return true;
-    }
-
+    /**
+     * Creates the OAuth2 Server
+     *
+     * @return void
+     */
     private function createServer() {
         Autoloader::register();
 
@@ -103,6 +122,11 @@ class OAuth2 {
         $this->storage  = $storage;
     }
 
+    /**
+     * Returns the database connection string
+     *
+     * @return string
+     */
     private function dsn() {
         return sprintf('mysql:dbname=%s;host%s;', $this->database_name, $this->database_host);
     }

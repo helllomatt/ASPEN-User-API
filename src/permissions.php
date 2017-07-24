@@ -13,6 +13,12 @@ class Permissions {
         $this->db = $db;
     }
 
+    /**
+     * Checks if a permission exists
+     *
+     * @param  string $name
+     * @return boolean
+     */
     public function permissionExists($name) {
         $query = $this->db->query('select')
             ->from('permissions')
@@ -23,6 +29,12 @@ class Permissions {
         return $query->count() == 1;
     }
 
+    /**
+     * Gets a permission by it's name
+     *
+     * @param  string $name
+     * @return array
+     */
     public function getPermission($name) {
         $query = $this->db->query('select')
             ->from('permissions')
@@ -35,6 +47,12 @@ class Permissions {
         return $query->fetch()[0];
     }
 
+    /**
+     * Creates a new permission
+     *
+     * @param  string $permission
+     * @return int
+     */
     public function create($permission) {
         if ($this->permissionExists($permission)) throw new Exception('permission already exists');
         return CRUD::insert($this->db, 'permissions', CRUD::compile([
@@ -42,6 +60,12 @@ class Permissions {
         ]));
     }
 
+    /**
+     * Deletes a permission and all of it's relational data
+     *
+     * @param  string $permission
+     * @return void
+     */
     public function delete($permission) {
         if (!$this->permissionExists($permission)) throw new Exception('permission does not exist');
         $permission = $this->getPermission($permission);
@@ -50,7 +74,7 @@ class Permissions {
             'data' => [':id' => $permission['id']]
         ]);
 
-        CRUD::delete($this->db, 'user_permissions_rel', [
+        CRUD::delete($this->db, 'user_permissions', [
             'expression' => 'permission_id = :pid',
             'data' => [':pid' => $permission['id']]
         ]);

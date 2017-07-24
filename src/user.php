@@ -9,14 +9,28 @@ use Exception;
 class User {
     private $db;
     private $user;
+
+
     public function __construct(DB $db) {
         $this->db = $db;
     }
 
+    /**
+     * Returns the information about the user
+     *
+     * @return array
+     */
     public function info() {
         return $this->user;
     }
 
+    /**
+     * Logs a user in, for SESSION based authentication
+     *
+     * @param  string $username
+     * @param  string $password
+     * @return Users\User
+     */
     public function login($username, $password) {
         $query = $this->db->query('select')->from('users')
             ->where('email = :e', [':e' => $username])
@@ -35,11 +49,23 @@ class User {
         return $this;
     }
 
+    /**
+     * Logs a user out, when using SESSION based auth
+     *
+     * @return void
+     */
     public static function logout() {
         unset($_SESSION['user']);
         session_destroy();
     }
 
+    /**
+     * Gets a user by their ID
+     *
+     * @param  int  $id
+     * @param  boolean $returnExists
+     * @return Users\User
+     */
     public function getById($id, $returnExists = false) {
         $query = $this->db->query('select')
             ->from('users')
@@ -56,6 +82,13 @@ class User {
         return $this;
     }
 
+    /**
+     * Gets a user by their email
+     *
+     * @param  string  $email
+     * @param  boolean $returnExists
+     * @return Users\User
+     */
     public function getByEmail($email, $returnExists = false) {
         $query = $this->db->query('select')
             ->from('users')
@@ -72,16 +105,31 @@ class User {
         return $this;
     }
 
+    /**
+     * Gets a user based on their token
+     *
+     * @return Users\User
+     */
     public function getSelf() {
         $auth = new OAuth2($this->db);
         $this->getById($auth->getToken()['user_id']);
         return $this;
     }
 
+    /**
+     * Returns the user's activation status
+     *
+     * @return boolean
+     */
     public function isActivated() {
         return $this->user['activated'] == 1;
     }
 
+    /**
+     * Gets a user's permissions
+     *
+     * @return array
+     */
     public function getPermissions() {
         $query = $this->db->query('select')
             ->columns(['permission'])
@@ -96,10 +144,21 @@ class User {
         return $permissions;
     }
 
+    /**
+     * Checks to see if a user has permission to do something
+     *
+     * @param  string  $permission
+     * @return boolean
+     */
     public function hasPermission($permission) {
         return in_array($permission, $this->getPermissions($this->user['id']));
     }
 
+    /**
+     * Gives a user a permission
+     *
+     * @param string $permission
+     */
     public function addPermission($permission) {
         $permissions = new Permissions($this->db);
         $p = $permissions->getPermission($permission);
@@ -114,6 +173,12 @@ class User {
         return true;
     }
 
+    /**
+     * Removes a permission from a user
+     *
+     * @param  string $permission
+     * @return boolean
+     */
     public function removePermission($permission) {
         $permissions = new Permissions($this->db);
         $p = $permissions->getPermission($permission);
@@ -128,6 +193,12 @@ class User {
         return true;
     }
 
+    /**
+     * Checks to see if the user has already requested a password reset
+     *
+     * @param  boolean $returnRequest
+     * @return boolean
+     */
     public function hasPasswordRequestSent($returnRequest = false) {
         $query = $this->db->query('select')
             ->from('user_password_reset_requests')
@@ -140,6 +211,16 @@ class User {
         else return $query->count() > 0;
     }
 
+    /**
+     * Registers a new user
+     *
+     * @param  DB     $db
+     * @param  string $email
+     * @param  string $name
+     * @param  string $password
+     * @param  string $activationcode
+     * @return int
+     */
     public static function register(DB $db, $email, $name, $password, $activationcode = null) {
         $user = new User($db);
         if ($user->getByEmail($email, true)) throw new Exception('email already registered');
@@ -157,6 +238,15 @@ class User {
         return $id;
     }
 
+    /**
+     * Activates a user account
+     *
+     * @param  DB     $db
+     * @param  User   $user
+     * @param  string $email
+     * @param  string $code
+     * @return boolean
+     */
     public static function activate(DB $db, User $user, $email, $code) {
         if ($user->info()['activationcode'] != $code) throw new Exception('invalid activation code');
         CRUD::update($db, 'users', CRUD::compile([
@@ -168,6 +258,13 @@ class User {
         return true;
     }
 
+    /**
+     * Creates a new reset request for a user's password
+     *
+     * @param DB     $db
+     * @param User   $user
+     * @param string
+     */
     public static function resetPasswordRequest(DB $db, User $user, $code = null) {
         if ($user->hasPasswordRequestSent()) throw new Exception('already sent password reset request.');
         if (!$code) $code = hash('SHA512', mt_rand(100000, 999999).time().uniqid());
@@ -180,6 +277,14 @@ class User {
         return true;
     }
 
+    /**
+     * Resets a user's password
+     *
+     * @param DB     $db
+     * @param User   $user
+     * @param string $password
+     * @param string $code
+     */
     public static function resetPassword(DB $db, User $user, $password, $code) {
         $request = $user->hasPasswordRequestSent(true);
         if ($code != $request['code']) throw new Exception('invalid reset code');
@@ -197,6 +302,17 @@ class User {
         ]);
     }
 
+    /**
+     * Updates a user's information
+     *
+     * @param  DB     $db
+     * @param  User   $user
+     * @param  boolean $reactivate
+     * @param  string $email
+     * @param  string $name
+     * @param  string $activationcode
+     * @return boolean
+     */
     public static function update(DB $db, User $user, &$reactivate, $email, $name, $activationcode = null) {
         $reactivate = $user->info()['email'] != $email;
 
@@ -215,6 +331,14 @@ class User {
         return true;
     }
 
+    /**
+     * Changes a user's password
+     *
+     * @param  DB     $db
+     * @param  User   $user
+     * @param  string $password
+     * @return boolean
+     */
     public static function changePassword(DB $db, User $user, $password) {
         CRUD::update($db, 'users', CRUD::compile([
             'password' => $password,
@@ -226,6 +350,16 @@ class User {
         return true;
     }
 
+    /**
+     * Deletes a user's account
+     *
+     * @param  DB      $db
+     * @param  User    $user
+     * @param  string  $email
+     * @param  string  $password
+     * @param  boolean $useplaintextpw
+     * @return boolean
+     */
     public static function delete(DB $db, User $user, $email, $password, $useplaintextpw = false) {
         if ($user->info()['email'] != $email) throw new Exception('invalid email');
         if ($useplaintextpw && $password != $user->info()['password']) throw new Exception('invalid password');

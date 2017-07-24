@@ -220,18 +220,134 @@ $api->add((new Endpoint([
             try {
                 $userId = $auth->getToken()['user_id'];
 
-                $db = $c->getDB('accounts');
-                $query = $db->query('select')->from('users')->where('id = :id', [':id' => $userId])->execute();
-                if ($query->failed()) throw new Exception('failed to get user');
-                if ($query->count() == 0) throw new Exception('you do not exist.');
-                $user = $query->fetch()[0];
-                unset($user['password']);
-                unset($user['activationcode']);
+                $user = new Users\User($c->getDB('accounts'));
+                $user->getById($userId);
 
-                $response->add('user', $user);
+                $info = $user->info();
+                unset($info['password']);
+                unset($info['activationcode']);
+
+                $response->add('user', $info);
                 $response->success();
             } catch(Exception $e) {
                 $response->error($e->getMessage());
+            }
+        }
+    }));
+
+$api->add((new Endpoint([
+    'to'     => 'users/add-permission',
+    'method' => 'post'
+]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            $user = (new Users\User($c->getDB('accounts')))->getById($auth->getToken()['user_id']);
+            if (!$user->hasPermission('give-permissions')) {
+                $response->error('You don\'t have permission to give users permissions.');
+            } else {
+                try {
+                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required']);
+
+                    if ($user_id == $user->info()['id'] && !$user->hasPermission('give-self-permissions')) {
+                        throw new Exception('You don\'t have permission to give yourself permissions.');
+                    }
+
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+
+                    $to_user = (new Users\User($c->getDB('accounts')))->getById($user_id);
+
+                    $response->add('permission_added', $to_user->addPermission($perm));
+                    $response->success();
+                } catch(Exception $e) {
+                    $response->error($e->getMessage());
+                }
+            }
+        }
+    }));
+
+$api->add((new Endpoint([
+    'to'     => 'users/remove-permission',
+    'method' => 'post'
+]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            $user = (new Users\User($c->getDB('accounts')))->getById($auth->getToken()['user_id']);
+            if (!$user->hasPermission('take-permissions')) {
+                $response->error('You don\'t have permission to remove users permissions.');
+            } else {
+                try {
+                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required']);
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+
+                    $to_user = (new Users\User($c->getDB('accounts')))->getById($user_id);
+
+                    $response->add('permission_removed', $to_user->removePermission($perm));
+                    $response->success();
+                } catch(Exception $e) {
+                    $response->error($e->getMessage());
+                }
+            }
+        }
+    }));
+
+$api->add((new Endpoint([
+    'to'     => 'users/permissions/create',
+    'method' => 'post'
+]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            $user = (new Users\User($c->getDB('accounts')))->getById($auth->getToken()['user_id']);
+            if (!$user->hasPermission('create-permissions')) {
+                $response->error('You don\'t have permission to create permissions.');
+            } else {
+                try {
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+
+                    $permissions = new Users\Permissions($c->getDB('accounts'));
+                    $response->add('permission_id', $permissions->create($perm));
+                    $response->success();
+                } catch(Exception $e) {
+                    $response->error($e->getMessage());
+                }
+            }
+        }
+    }));
+
+$api->add((new Endpoint([
+    'to'     => 'users/permissions/delete',
+    'method' => 'post'
+]))->then(function(Response $response, Connector $c) {
+        $auth = new Users\OAuth2($c->getDB('accounts'));
+        $auth->validate();
+
+        if (!$auth->valid()) {
+            $response->error('Unauthorized.');
+        } else {
+            $user = (new Users\User($c->getDB('accounts')))->getById($auth->getToken()['user_id']);
+            if (!$user->hasPermission('delete-permissions')) {
+                $response->error('You don\'t have permission to delete permissions.');
+            } else {
+                try {
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+
+                    $permissions = new Users\Permissions($c->getDB('accounts'));
+                    $response->add('permission_id', $permissions->delete($perm));
+                    $response->success();
+                } catch(Exception $e) {
+                    $response->error($e->getMessage());
+                }
             }
         }
     }));

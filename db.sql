@@ -56,3 +56,10 @@ CREATE TABLE `user_permissions` (
   `user_id` int(11) NOT NULL,
   `permission_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+INSERT INTO `permissions` (`id`, `permission`) VALUES
+	(1, 'create-permissions'),
+	(2, 'delete-permissions'),
+	(3, 'give-permissions'),
+	(4, 'give-self-permissions'),
+	(5, 'take-permissions');

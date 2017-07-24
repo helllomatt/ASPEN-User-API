@@ -25,7 +25,7 @@ composer require helllomatt/aspen-user-api
 ### Code updates
 In your `index.php` file there are two changes that need to be made.
 
-1. Add `session_start()` under `require 'vendor/autoload.php'`
+1. Add `session_start()` under `require 'vendor/autoload.php'` (if you plan to use session based auth)
 1. Add `vendor/helllomatt/aspen-user-api` to the manager's `load()` array
 
 After that, you're ready to use the API.

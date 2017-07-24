@@ -19,8 +19,8 @@ composer require helllomatt/aspen-user-api
 ### Setting up the database:
 
 1. Navigate to the package `.../vendor/helllomatt/aspen-user-api`
-1. In the `src` folder you'll find `oauth.sql`
-1. Import `oauth.sql` into your database
+1. In the root folder you'll find `db.sql`
+1. Import `db.sql` into your database
 
 ### Code updates
 In your `index.php` file there are two changes that need to be made.

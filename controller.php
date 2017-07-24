@@ -343,7 +343,7 @@ $api->add((new Endpoint([
                     $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
 
                     $permissions = new Users\Permissions($c->getDB('accounts'));
-                    $response->add('permission_id', $permissions->delete($perm));
+                    $response->add('deleted', $permissions->delete($perm));
                     $response->success();
                 } catch(Exception $e) {
                     $response->error($e->getMessage());

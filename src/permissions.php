@@ -5,7 +5,6 @@ namespace Users;
 use Double\DB;
 use Basically\CRUD;
 use Basically\Errors;
-use Exception;
 
 class Permissions {
     private $db;
@@ -26,7 +25,7 @@ class Permissions {
             ->where('permission = :n', [':n' => $name])
             ->execute();
 
-        if ($query->failed()) throw new Exception('Failed to check if the permission exists.');
+        if ($query->failed()) throw new UserException('Failed to check if the permission exists.');
         return $query->count() == 1;
     }
 
@@ -42,8 +41,8 @@ class Permissions {
             ->where('permission = :n', [':n' => $name])
             ->execute();
 
-        if ($query->failed()) throw new Exception('Failed to get permission.');
-        if ($query->count() != 1) throw new Exception('Permission does not exist.');
+        if ($query->failed()) throw new UserException('Failed to get permission.');
+        if ($query->count() != 1) throw new UserException('Permission does not exist.');
 
         return $query->fetch()[0];
     }
@@ -55,7 +54,7 @@ class Permissions {
      * @return int
      */
     public function create($permission) {
-        if ($this->permissionExists($permission)) throw new Exception('Permission already exists.');
+        if ($this->permissionExists($permission)) throw new UserException('Permission already exists.');
         return CRUD::insert($this->db, 'permissions', CRUD::compile([
             'permission' => CRUD::sanitize($permission, ['string', 'required', 'match' => 'a-z-'])
         ]), Errors::generate([
@@ -72,7 +71,7 @@ class Permissions {
      * @return void
      */
     public function delete($permission) {
-        if (!$this->permissionExists($permission)) throw new Exception('permission does not exist');
+        if (!$this->permissionExists($permission)) throw new UserException('permission does not exist');
         $permission = $this->getPermission($permission);
         CRUD::delete($this->db, 'permissions', [
             'expression' => 'id = :id',

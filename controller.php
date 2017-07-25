@@ -301,7 +301,7 @@ $api->add((new Endpoint([
                     ]));
 
                     if ($user_id == $user->info()['id'] && !$user->hasPermission('give-self-permissions')) {
-                        throw new Exception('You don\'t have permission to give yourself permissions.');
+                        throw new UserException('You don\'t have permission to give yourself permissions.');
                     }
 
                     $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required'], Errors::generate([

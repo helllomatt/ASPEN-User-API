@@ -20,8 +20,16 @@ $api->add((new Endpoint([
     ]))->then(function (Response $response, Connector $c) {
         $db = $c->getDB('accounts');
 
-        $username = CRUD::sanitize($c->getVariable('email'), ['string', 'required', 'xss', 'notags']);
-        $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required', 'xss', 'notags']);
+        $username = CRUD::sanitize($c->getVariable('username'), ['string', 'required', 'xss', 'notags'],
+            Errors::generate([
+                'notstring' => "Invalid username.",
+                'missing'   => "Please provide your username."
+            ]));
+        $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required', 'xss', 'notags'],
+            Errors::generate([
+                'notstring' => "Invalid username.",
+                'missing'   => "Please provide your password."
+            ]));
 
         $user = (new User($db))->login($username, $password);
 
@@ -62,9 +70,18 @@ $api->add((new Endpoint([
         'method' => 'post'
     ]))->then(function(Response $response, Connector $c) {
         try {
-            $email      = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-            $name       = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss']);
-            $password   = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
+            $email = CRUD::sanitize($c->getVariable('email'), ['email', 'required'], Errors::generate([
+                'bademail' => 'Invalid email.',
+                'missing'  => 'Please provide an email address.'
+            ]));
+            $name = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss'], Errors::generate([
+                'badname' => 'Invalid name',
+                'missing' => 'Please provide your full name'
+            ]));
+            $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]], Errors::generate([
+                'missing'  => 'Please provide a password',
+                'tooshort' => 'Your password must be at least 4 characters long'
+            ]));
 
             $db = $c->getDB('accounts');
 
@@ -81,8 +98,12 @@ $api->add((new Endpoint([
         'method' => 'post'
     ]))->then(function(Response $response, Connector $c) {
         try {
-            $code   = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
-            $email  = CRUD::sanitize($c->getVariable('email'), ['email']);
+            $code = CRUD::sanitize($c->getVariable('code'), ['required', 'string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required'],
+                Errors::generateForAll('Invalid code.')));
+            $email = CRUD::sanitize($c->getVariable('email'), ['required', 'email'], Errors::generate([
+                'bademail' => 'Invalid email.',
+                'missing'  => 'Failed to activate, missing a requirement.'
+            ]));
 
             $db = $c->getDB('accounts');
             $user = (new User($db))->getByEmail($email);
@@ -99,7 +120,10 @@ $api->add((new Endpoint([
         'method' => 'post'
     ]))->then(function(Response $response, Connector $c) {
         try {
-            $email = CRUD::sanitize($c->getVariable('email'), ['email']);
+            $email = CRUD::sanitize($c->getVariable('email'), ['required', 'email'], Errors::generate([
+                'missing'  => 'Please provide your email address',
+                'bademail' => 'Invalid email address'
+            ]));
 
             $db = $c->getDB('accounts');
             $user = (new User($db))->getByEmail($email);
@@ -117,9 +141,16 @@ $api->add((new Endpoint([
         'method' => 'post'
     ]))->then(function(Response $response, Connector $c) {
         try {
-            $code     = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required']);
-            $email    = CRUD::sanitize($c->getVariable('email'), ['email']);
-            $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
+            $code = CRUD::sanitize($c->getVariable('code'), ['string', 'match' => 'a-z0-9', 'strlen' => ['short' => 128, 'long' => 128], 'required'],
+                Errors::generateForAll('Invalid code.')));
+            $email = CRUD::sanitize($c->getVariable('email'), ['required', 'email'], Errors::generate([
+                'missing'  => 'Please provide your email address',
+                'bademail' => 'Invalid email address'
+            ]));
+            $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]], Errors::generate([
+                'missing'  => 'Please provide a password',
+                'tooshort' => 'Your password must be at least 4 characters long'
+            ]));
 
             $db = $c->getDB('accounts');
             $user = (new User($db))->getByEmail($email);
@@ -142,8 +173,14 @@ $api->add((new Endpoint([
             $response->error('Unauthorized.');
         } else {
             try {
-                $email = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-                $name  = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full']);
+                $email = CRUD::sanitize($c->getVariable('email'), ['required', 'email'], Errors::generate([
+                    'missing'  => 'Please provide your email address',
+                    'bademail' => 'Invalid email address'
+                ]));
+                $name = CRUD::sanitize($c->getVariable('name'), ['name', 'required-full', 'notags', 'xss'], Errors::generate([
+                    'badname' => 'Invalid name',
+                    'missing' => 'Please provide your full name'
+                ]));
 
                 $db   = $c->getDB('accounts');
                 $user = (new User($db))->getSelf();
@@ -169,7 +206,10 @@ $api->add((new Endpoint([
             $response->error('Unauthorized.');
         } else {
             try {
-                $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]]);
+                $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]], Errors::generate([
+                    'missing'  => 'Please provide a password',
+                    'tooshort' => 'Your password must be at least 4 characters long'
+                ]));
 
                 $db   = $c->getDB('accounts');
                 $user = (new User($db))->getSelf();
@@ -193,8 +233,14 @@ $api->add((new Endpoint([
             $response->error('Unauthorized.');
         } else {
             try {
-                $email    = CRUD::sanitize($c->getVariable('email'), ['email', 'required']);
-                $password = CRUD::sanitize($c->getVariable('password'), ['string', 'required']);
+                $email = CRUD::sanitize($c->getVariable('email'), ['required', 'email'], Errors::generate([
+                    'missing'  => 'Please provide your email address',
+                    'bademail' => 'Invalid email address'
+                ]));
+                $password = CRUD::sanitize($c->getVariable('password'), ['password', 'required', 'string', 'strlen' => ['short' => 4]], Errors::generate([
+                    'missing'  => 'Please provide a password',
+                    'tooshort' => 'Your password must be at least 4 characters long'
+                ]));
 
                 $db   = $c->getDB('accounts');
                 $user = (new User($db))->getSelf();
@@ -250,13 +296,18 @@ $api->add((new Endpoint([
                 $response->error('You don\'t have permission to give users permissions.');
             } else {
                 try {
-                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required']);
+                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required'], Errors::generate([
+                        'missing' => 'Please provide a user ID'
+                    ]));
 
                     if ($user_id == $user->info()['id'] && !$user->hasPermission('give-self-permissions')) {
                         throw new Exception('You don\'t have permission to give yourself permissions.');
                     }
 
-                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required'], Errors::generate([
+                        'missing'   => 'Please provide a permission to add',
+                        'notstring' => 'Invalid permission'
+                    ]));
 
                     $to_user = (new Users\User($c->getDB('accounts')))->getById($user_id);
 
@@ -284,8 +335,13 @@ $api->add((new Endpoint([
                 $response->error('You don\'t have permission to remove users permissions.');
             } else {
                 try {
-                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required']);
-                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+                    $user_id = CRUD::sanitize($c->getVariable('user_id'), ['required'], Errors::generate([
+                        'missing' => 'Please provide a user ID'
+                    ]));
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required'], Errors::generate([
+                        'missing'   => 'Please provide a permission to add',
+                        'notstring' => 'Invalid permission'
+                    ]));
 
                     $to_user = (new Users\User($c->getDB('accounts')))->getById($user_id);
 
@@ -313,7 +369,10 @@ $api->add((new Endpoint([
                 $response->error('You don\'t have permission to create permissions.');
             } else {
                 try {
-                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required'], Errors::generate([
+                        'missing'   => 'Please provide a permission to add',
+                        'notstring' => 'Invalid permission'
+                    ]));
 
                     $permissions = new Users\Permissions($c->getDB('accounts'));
                     $response->add('permission_id', $permissions->create($perm));
@@ -340,7 +399,10 @@ $api->add((new Endpoint([
                 $response->error('You don\'t have permission to delete permissions.');
             } else {
                 try {
-                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required']);
+                    $perm = CRUD::sanitize($c->getVariable('name'), ['string', 'required'], Errors::generate([
+                        'missing'   => 'Please provide a permission to add',
+                        'notstring' => 'Invalid permission'
+                    ]));
 
                     $permissions = new Users\Permissions($c->getDB('accounts'));
                     $response->add('deleted', $permissions->delete($perm));

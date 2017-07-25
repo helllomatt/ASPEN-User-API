@@ -72,9 +72,9 @@ class User {
             ->where('id = :id', [':id' => $id])
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to get user');
+        if ($query->failed()) throw new Exception('Failed to get user.');
         elseif ($returnExists && $query->failed()) return false;
-        elseif (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
+        elseif (!$returnExists && $query->count() == 0) throw new Exception('User does not exist.');
         elseif ($returnExists) return $query->count() == 1;
 
         $user = $query->fetch()[0];
@@ -95,9 +95,9 @@ class User {
             ->where('email = :e', [':e' => $email])
             ->execute();
 
-        if ($query->failed() && !$returnExists) throw new Exception('failed to get user');
+        if ($query->failed()) throw new Exception('Failed to get user.');
         elseif ($returnExists && $query->failed()) return false;
-        elseif (!$returnExists && $query->count() == 0) throw new Exception('user does not exist');
+        elseif (!$returnExists && $query->count() == 0) throw new Exception('User does not exist.');
         elseif ($returnExists) return $query->count() == 1;
 
         $user = $query->fetch()[0];
@@ -138,7 +138,7 @@ class User {
             ->where('upr.user_id = :id', [':id' => $this->user['id']])
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to get user permissions');
+        if ($query->failed()) throw new Exception('Failed to get user permissions.');
 
         $permissions = array_map(function($var) { return $var['permission']; }, $query->fetch());
         return $permissions;
@@ -206,7 +206,7 @@ class User {
             ->order_by('expires', 'DESC')
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to check for an existing request');
+        if ($query->failed()) throw new Exception('Failed to check for an existing password request.');
         if ($returnRequest) return $query->fetch()[0];
         else return $query->count() > 0;
     }
@@ -223,7 +223,7 @@ class User {
      */
     public static function register(DB $db, $email, $name, $password, $activationcode = null) {
         $user = new User($db);
-        if ($user->getByEmail($email, true)) throw new Exception('email already registered');
+        if ($user->getByEmail($email, true)) throw new Exception('That email is already registered to an account.');
 
         if (!$activationcode) $activationcode = hash('SHA512', mt_rand(100000, 999999).time().uniqid());
         $id = CRUD::insert($db, 'users', CRUD::compile([
@@ -248,7 +248,7 @@ class User {
      * @return boolean
      */
     public static function activate(DB $db, User $user, $email, $code) {
-        if ($user->info()['activationcode'] != $code) throw new Exception('invalid activation code');
+        if ($user->info()['activationcode'] != $code) throw new Exception('Invalid activation code');
         CRUD::update($db, 'users', CRUD::compile([
             'activated' => true
         ]), [
@@ -266,7 +266,7 @@ class User {
      * @param string
      */
     public static function resetPasswordRequest(DB $db, User $user, $code = null) {
-        if ($user->hasPasswordRequestSent()) throw new Exception('already sent password reset request.');
+        if ($user->hasPasswordRequestSent()) throw new Exception('Password request already generated.');
         if (!$code) $code = hash('SHA512', mt_rand(100000, 999999).time().uniqid());
         CRUD::insert($db, 'user_password_reset_requests', CRUD::compile([
             'user_id'   => $user->info()['id'],
@@ -287,7 +287,7 @@ class User {
      */
     public static function resetPassword(DB $db, User $user, $password, $code) {
         $request = $user->hasPasswordRequestSent(true);
-        if ($code != $request['code']) throw new Exception('invalid reset code');
+        if ($code != $request['code']) throw new Exception('Invalid password reset code.');
 
         CRUD::update($db, 'users', CRUD::compile([
             'password' => $password,
@@ -361,9 +361,9 @@ class User {
      * @return boolean
      */
     public static function delete(DB $db, User $user, $email, $password, $useplaintextpw = false) {
-        if ($user->info()['email'] != $email) throw new Exception('invalid email');
-        if ($useplaintextpw && $password != $user->info()['password']) throw new Exception('invalid password');
-        if (!$useplaintextpw && !password_verify($password, $user->info()['password'])) throw new Exception('invalid password');
+        if ($user->info()['email'] != $email) throw new Exception('Invalid email address.');
+        if ($useplaintextpw && $password != $user->info()['password']) throw new Exception('Invalid password');
+        if (!$useplaintextpw && !password_verify($password, $user->info()['password'])) throw new Exception('Invalid password');
 
         CRUD::delete($db, 'users', [
             'expression'    => 'id = :id',

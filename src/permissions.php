@@ -4,6 +4,7 @@ namespace Users;
 
 use Double\DB;
 use Basically\CRUD;
+use Basically\Errors;
 use Exception;
 
 class Permissions {
@@ -25,7 +26,7 @@ class Permissions {
             ->where('permission = :n', [':n' => $name])
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to get permisison');
+        if ($query->failed()) throw new Exception('Failed to check if the permission exists.');
         return $query->count() == 1;
     }
 
@@ -41,8 +42,8 @@ class Permissions {
             ->where('permission = :n', [':n' => $name])
             ->execute();
 
-        if ($query->failed()) throw new Exception('failed to get permisison');
-        if ($query->count() != 1) throw new Exception('permission does not exist');
+        if ($query->failed()) throw new Exception('Failed to get permission.');
+        if ($query->count() != 1) throw new Exception('Permission does not exist.');
 
         return $query->fetch()[0];
     }
@@ -54,9 +55,13 @@ class Permissions {
      * @return int
      */
     public function create($permission) {
-        if ($this->permissionExists($permission)) throw new Exception('permission already exists');
+        if ($this->permissionExists($permission)) throw new Exception('Permission already exists.');
         return CRUD::insert($this->db, 'permissions', CRUD::compile([
             'permission' => CRUD::sanitize($permission, ['string', 'required', 'match' => 'a-z-'])
+        ]), Errors::generate([
+            'missing' => 'Please provide a name for the permission.',
+            'notstring' => 'Invalid permission name',
+            'mismatch' => 'Invalid permission name, allowed characters are a-z-'
         ]));
     }
 
